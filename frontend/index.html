@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autocomplete App</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: monospace;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 90vh;
+            background-color: black;
+            color: white;
+            border: none;
+            font-size: 16px;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <textarea id="editor" placeholder="Type your code here..."></textarea>
+    <script>
+        const textarea = document.getElementById('editor');
+
+        textarea.addEventListener('keydown', async (event) => {
+            // Trigger on Ctrl + Shift + F
+            if (event.ctrlKey && event.shiftKey && event.key === 'F') {
+                event.preventDefault();
+                const text = textarea.value;
+
+                // Call the local Flask API running on localhost:5000
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+                
+                // Handle the response from the Flask API
+                const data = await response.json();
+                const suggestedWord = data.suggested_word;
+
+                // Append the suggested word to the text
+                textarea.value += suggestedWord + ' ';
+            }
+        });
+    </script>
+</body>
+</html>
