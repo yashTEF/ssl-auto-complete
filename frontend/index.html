@@ -12,13 +12,13 @@
             padding: 20px;
             margin: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             height: 100vh;
         }
         textarea {
             width: 80%;
-            height: 80vh;
+            height: 60vh;
             background-color: #1e1e1e;
             color: #e0e0e0;
             border: 1px solid #333;
@@ -33,30 +33,82 @@
             border-color: #6200ea;
             box-shadow: 0 4px 8px rgba(98, 0, 234, 0.4);
         }
+        #suggestion-box {
+            width: 80%;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .suggestion {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+        }
+        .suggestion:last-child {
+            border-bottom: none;
+        }
+        .suggestion:hover {
+            background-color: #333;
+        }
     </style>
 </head>
 <body>
     <textarea id="editor" placeholder="Type your code here..."></textarea>
+    <div id="suggestion-box" style="display: none;"></div>
+
     <script>
         const textarea = document.getElementById('editor');
+        const suggestionBox = document.getElementById('suggestion-box');
 
         textarea.addEventListener('keydown', async (event) => {
-            if (event.ctrlKey && event.key === ' ') {
+            if (event.shiftKey && event.key.toLowerCase() === 'p') {
                 event.preventDefault();
+                console.log('Autocomplete triggered');
+
                 const text = textarea.value;
 
-                const response = await fetch('http://localhost:5000/predict', {
+                // Fetch predictions from the Flask API
+                const response = await fetch('http://127.0.0.1:5000/predict', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ text })
                 });
-                
-                const data = await response.json();
-                const suggestedWord = data.suggested_word;
 
-                textarea.value += suggestedWord + ' ';
+                const data = await response.json();
+                const suggestedWords = data.suggested_words;
+
+                // Update the suggestion box
+                suggestionBox.innerHTML = ''; // Clear previous suggestions
+                if (suggestedWords.length > 0) {
+                    suggestionBox.style.display = 'block'; // Show the suggestion box
+                    suggestedWords.forEach((word) => {
+                        const suggestion = document.createElement('div');
+                        suggestion.className = 'suggestion';
+                        suggestion.textContent = word;
+                        suggestion.addEventListener('click', () => {
+                            textarea.value += word + ' '; // Append selected word to the textarea
+                            suggestionBox.style.display = 'none'; // Hide suggestions
+                        });
+                        suggestionBox.appendChild(suggestion);
+                    });
+                } else {
+                    suggestionBox.style.display = 'none'; // Hide the suggestion box if no words
+                }
+            }
+        });
+
+        // Hide suggestion box if user clicks outside
+        document.addEventListener('click', (event) => {
+            if (!textarea.contains(event.target) && !suggestionBox.contains(event.target)) {
+                suggestionBox.style.display = 'none';
             }
         });
     </script>
